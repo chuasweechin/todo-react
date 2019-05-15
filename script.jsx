@@ -1,107 +1,119 @@
 class List extends React.Component {
-  render() {
-      let completion_dates = [...new Set(this.props.list.map(x => x.target_completion))];
+    render() {
+        let completion_dates = [...new Set(this.props.list.map(x => x.target_completion))];
 
-      let element = completion_dates.map( (date, index) => {
-        let task = this.props.list
-                    .filter( (item) => {
-                        return item.target_completion === date;
-                    })
-                    .map( (item, index) => {
-                        return (
-                            <ul key={index}>
-                                <li>Task: { item.task }</li>
-                                <li>Mark as Done: <input type="checkbox"/></li>
-                            </ul>
-                        );
-                    });
+        let element = completion_dates.map( (date, index) => {
+            let task = this.props.list
+                        .filter( (item) => {
+                            return item.target_completion === date;
+                        })
+                        .map( (item, innerIndex) => {
+                            return (
+                                <ul key={ item.id }>
+                                    <li>Task: { item.task }</li>
+                                    <li>
+                                        <label>Mark as Done:
+                                                <input
+                                                    type="checkbox"
+                                                    id={ item.id }
+                                                    onChange={ (e) => { this.props.markTaskHandler(e) } }
+                                                    checked = { item.done }
+                                                />
+                                        </label>
+                                    </li>
+                                </ul>
+                            );
+                        });
+
+            return (
+                <div key={ index }>
+                    <h2>{ date }</h2>
+                    { task }
+                </div>
+            );
+        });
 
         return (
-            <div key={index}>
-                <h2>{ date }</h2>
-                { task }
+            <div>
+                { element }
             </div>
         );
-      });
-
-
-
-      return (
-        <div>
-            { element }
-        </div>
-      );
-  }
+    }
 }
 
 class App extends React.Component {
-  state = {
-    list : [
-        {
-          "id": 1,
-          "task": "Eat laksa",
-          "done": false,
-          "target_completion": "19 May 2019",
-          "created_at": "31 Mar 2019, 2:44:28 am"
-        },
-        {
-          "id": 1,
-          "task": "Buy fruit juice",
-          "done": false,
-          "target_completion": "20 May 2019",
-          "created_at": "31 Mar 2019, 6:44:28 am"
+    constructor(){
+        super();
+
+        this.state = {
+            list: data
         }
-    ]
-  }
 
-  submitHandler(e) {
-    let valid = true;
-
-    e.preventDefault();
-    e.target.elements.task.className = "";
-    e.target.elements.completion.className = "";
-
-    if (e.target.elements.task.value.length < 1) {
-        e.target.elements.task.className = "warning";
-        valid = false;
+        //this.markTaskHandler = this.markTaskHandler.bind(this);
     }
 
-    if (e.target.elements.completion.value.length < 1) {
-        e.target.elements.completion.className = "warning";
-        valid = false;
+    submitHandler(e) {
+        let valid = true;
+
+        e.preventDefault();
+        e.target.elements.task.className = "";
+        e.target.elements.completion.className = "";
+
+        if (e.target.elements.task.value.length < 1) {
+            e.target.elements.task.className = "warning";
+            valid = false;
+        }
+
+        if (e.target.elements.completion.value.length < 1) {
+            e.target.elements.completion.className = "warning";
+            valid = false;
+        }
+
+        if (valid === true) {
+            this.state.list.push({
+                "id": this.state.list.length + 1,
+                "task": e.target.elements.task.value,
+                "done": false,
+                "target_completion": moment(e.target.elements.completion.value).format("D MMM YYYY"),
+                "created_at": moment().format('D MMM YYYY, h:mm:ss a')
+            })
+
+            this.setState( { list: this.state.list } );
+        }
     }
 
-    if (valid === true) {
-        this.state.list.push({
-            "id": this.state.list.length + 1,
-            "task": e.target.elements.task.value,
-            "done": false,
-            "target_completion": moment(e.target.elements.completion.value).format("D MMM YYYY"),
-            "created_at": moment().format('D MMM YYYY, h:mm:ss a'),
-            "updated_at": ""
-        })
+    markTaskHandler(e) {
+        let id = this.state.list.findIndex((item) => { return item.id.toString() === e.target.id });
 
-        this.setState({ list: this.state.list });
+        if (this.state.list[id].done === false) {
+            this.state.list[id].done = true;
+        } else {
+            this.state.list[id].done = false;
+        }
+
+        this.setState( { list: this.state.list } );
     }
-  }
 
-  render() {
+    render() {
       return (
         <div>
             <form onSubmit={ (e) => { this.submitHandler(e) } }>
-              <div>Task: <input name="task" type="text"/></div>
-              <br/>
-              <div>To be Completed By: <input name="completion" type="date"/></div>
-              <button type="submit">Add New To Do Item</button>
+                <div>Task: <input name="task" type="text"/></div>
+                <br/>
+                <div>To be Completed By: <input name="completion" type="date"/></div>
+                <button type="submit">Add New To Do Item</button>
             </form>
 
             <br/>
 
             <h1>To Do List</h1>
-            <List list = { this.state.list }/>
+            <List
+                list = { this.state.list }
+                markTaskHandler = { (e) => { this.markTaskHandler(e) } }
+            />
         </div>
       );
-  }
+    }
 }
 
 ReactDOM.render(
