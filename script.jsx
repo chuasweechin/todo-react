@@ -1,71 +1,116 @@
-class List extends React.Component {
+class ToDoItem extends React.Component {
     render() {
-        let completion_dates = [...new Set(this.props.list.map(x => x.target_completion))];
-
-        let element = completion_dates.map( (date, index) => {
-            let task = this.props.list
-                        .filter( (item) => {
-                            return item.target_completion === date;
-                        })
-                        .map( (item, innerIndex) => {
-                            return (
-                                <ul key={ item.id }>
-                                    <li>Task: { item.task }</li>
-                                    <li>
-                                        <label>Mark as Done:
-                                                <input
-                                                    type="checkbox"
-                                                    id={ item.id }
-                                                    onChange={ (e) => { this.props.markTaskHandler(e) } }
-                                                    checked = { item.done }
-                                                />
-                                        </label>
-                                    </li>
-                                </ul>
-                            );
-                        });
-
-            return (
-                <div key={ index }>
-                    <h2>{ date }</h2>
-                    { task }
-                </div>
-            );
-        });
-
         return (
-            <div>
-                { element }
+            <div className="toDoItemCard">
+                <label>
+                    <input type="checkbox"
+                        id={ this.props.item.id }
+                        onChange={ (e) => { this.props.markTaskHandler(e) } }
+                        checked = { this.props.item.done }
+                    />
+                </label>
+                { this.props.item.task }
             </div>
         );
     }
 }
 
+
+class ItemList extends React.Component {
+    render() {
+        let completion_dates = [...new Set(this.props.list
+                                            .filter((item) => {
+                                                return item.done === false;
+                                            })
+                                            .map((x) => {
+                                                return x.target_completion;
+                                            })
+                                )];
+
+        let outstandingTask = completion_dates.sort().map( (date, index) => {
+            let task = this.props.list
+                        .filter( (item) => {
+                            return item.target_completion === date && item.done === false
+                        })
+                        .map( (item) => {
+                            return (
+                                <ToDoItem markTaskHandler={ (e) => { this.props.markTaskHandler(e) } }
+                                    item = { item } />
+                            );
+                        });
+
+            return (
+                <React.Fragment>
+                    <h6>{ task.length } outstanding task for { date }</h6>
+                    { task }
+                    <br/>
+                </React.Fragment>
+            );
+        });
+
+        let completedTask = this.props.list
+            .filter( (item) => {
+                return item.done === true;
+            })
+            .map( (item, innerIndex) => {
+                return (
+                    <ToDoItem markTaskHandler={ (e) => { this.props.markTaskHandler(e) } }
+                        item = { item } />
+                );
+            });
+
+        return (
+            <div>
+                <h4>To Do List</h4>
+                { outstandingTask }
+                <br/>
+                <h4>Completed Task: { completedTask.length }</h4>
+                { completedTask }
+            </div>
+        );
+    }
+}
+
+
+class Form extends React.Component {
+    render() {
+        return (
+            <form className="addTask" onSubmit={ (e) => { this.props.submitHandler(e) } }>
+                <h4>Add Task </h4>
+                <div>Task Name: <input className="form-control" name="task" type="text"/></div>
+                <br/>
+                <div>To be Completed By: <input className="form-control" name="completion" type="date"/></div>
+                <br/>
+                <button type="submit" className="btn btn-primary btn-sm">Add New Task</button>
+            </form>
+        );
+    }
+}
+
+
 class App extends React.Component {
-    constructor(){
+    constructor() {
         super();
 
         this.state = {
             list: data
         }
-
-        //this.markTaskHandler = this.markTaskHandler.bind(this);
     }
 
     submitHandler(e) {
         let valid = true;
 
         e.preventDefault();
-        e.target.elements.task.className = "";
-        e.target.elements.completion.className = "";
+        e.target.elements.task.className = "form-control";
+        e.target.elements.completion.className = "form-control";
 
         if (e.target.elements.task.value.length < 1) {
-            e.target.elements.task.className = "warning";
+            e.target.elements.task.className = "form-control is-invalid";
             valid = false;
         }
 
         if (e.target.elements.completion.value.length < 1) {
-            e.target.elements.completion.className = "warning";
+            e.target.elements.completion.className = "form-control is-invalid";
             valid = false;
         }
 
@@ -95,26 +140,18 @@ class App extends React.Component {
     }
 
     render() {
-      return (
-        <div>
-            <form onSubmit={ (e) => { this.submitHandler(e) } }>
-                <div>Task: <input name="task" type="text"/></div>
+        return (
+            <div>
+                <Form submitHandler = { (e) => { this.submitHandler(e) } }/>
                 <br/>
-                <div>To be Completed By: <input name="completion" type="date"/></div>
-                <button type="submit">Add New To Do Item</button>
-            </form>
-
-            <br/>
-
-            <h1>To Do List</h1>
-            <List
-                list = { this.state.list }
-                markTaskHandler = { (e) => { this.markTaskHandler(e) } }
-            />
-        </div>
-      );
+                <ItemList markTaskHandler = { (e) => { this.markTaskHandler(e) } }
+                    list = { this.state.list }
+                />
+            </div>
+        );
     }
 }
+
 
 ReactDOM.render(
     <App/>,
