@@ -25,7 +25,7 @@ class ToDoItem extends React.Component {
         if(this.state.editable === true) {
             cardDisplayElement = <input autoFocus
                                 id={ this.props.item.id }
-                                defaultValue={this.props.item.task}
+                                defaultValue={ this.props.item.task }
                                 onBlur={ (e) => { this.editTaskHandler(e) } }
                            />
         }
