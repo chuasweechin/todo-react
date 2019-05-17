@@ -1,20 +1,58 @@
 class ToDoItem extends React.Component {
+    constructor() {
+        super();
+        this.state = {
+            editable: false,
+        }
+    }
+
+    enableEditHandler() {
+        if (this.state.editable === false) {
+            this.setState( { editable: true });
+        } else {
+            this.setState( { editable: false });
+        }
+    }
+
+    editTaskHandler(e) {
+        this.props.updateTaskHandler(e);
+        this.enableEditHandler();
+    }
+
     render() {
+        let cardDisplayElement = "";
+
+        if(this.state.editable === true) {
+            cardDisplayElement = <input autoFocus
+                                id={ this.props.item.id }
+                                defaultValue={this.props.item.task}
+                                onBlur={ (e) => { this.editTaskHandler(e) } }
+                           />
+        }
+        else {
+            cardDisplayElement = <label
+                            id={ this.props.item.id }
+                            className="taskName"
+                            onClick={ () => { this.enableEditHandler() } }
+                           >
+                                { this.props.item.task }
+                           </label>
+        }
+
         return (
             <div className="toDoItemCard">
-                <label>
-                    <input type="checkbox"
+                <label className="markAsDone">
+                    <input
+                        type="checkbox"
                         id={ this.props.item.id }
                         onChange={ (e) => { this.props.markTaskHandler(e) } }
                         checked = { this.props.item.done }
                     />
                 </label>
-                { this.props.item.task }
+                { cardDisplayElement }
             </div>
         );
-    }
-}
-
+    }}
 
 class ItemList extends React.Component {
     render() {
@@ -34,7 +72,9 @@ class ItemList extends React.Component {
                         })
                         .map( (item) => {
                             return (
-                                <ToDoItem markTaskHandler={ (e) => { this.props.markTaskHandler(e) } }
+                                <ToDoItem
+                                    markTaskHandler={ (e) => { this.props.markTaskHandler(e) } }
+                                    updateTaskHandler= { (e) => { this.props.updateTaskHandler(e) } }
                                     item = { item } />
                             );
                         });
@@ -52,25 +92,36 @@ class ItemList extends React.Component {
             .filter( (item) => {
                 return item.done === true;
             })
-            .map( (item, innerIndex) => {
+            .map( (item) => {
                 return (
-                    <ToDoItem markTaskHandler={ (e) => { this.props.markTaskHandler(e) } }
-                        item = { item } />
+                    <ToDoItem
+                        markTaskHandler= { (e) => { this.props.markTaskHandler(e) } }
+                        updateTaskHandler= { (e) => { this.props.updateTaskHandler(e) } }
+                        item = { item }
+                    />
                 );
             });
+
+        if (outstandingTask.length === 0) {
+            outstandingTask = "You have no outstanding task :D"
+        }
+
+        if (completedTask.length === 0) {
+            completedTask = "You have no completed task :("
+        }
 
         return (
             <div>
                 <h4>To Do List</h4>
                 { outstandingTask }
                 <br/>
-                <h4>Completed Task: { completedTask.length }</h4>
+                <br/>
+                <h4>Completed Task</h4>
                 { completedTask }
             </div>
         );
     }
 }
-
 
 class Form extends React.Component {
     render() {
@@ -87,7 +138,6 @@ class Form extends React.Component {
     }
 }
 
-
 class App extends React.Component {
     constructor() {
         super();
@@ -99,6 +149,7 @@ class App extends React.Component {
 
     submitHandler(e) {
         let valid = true;
+        const newList = [...this.state.list];
 
         e.preventDefault();
         e.target.elements.task.className = "form-control";
@@ -115,37 +166,50 @@ class App extends React.Component {
         }
 
         if (valid === true) {
-            this.state.list.push({
-                "id": this.state.list.length + 1,
+            newList.push({
+                "id": newList + 1,
                 "task": e.target.elements.task.value,
                 "done": false,
                 "target_completion": moment(e.target.elements.completion.value).format("D MMM YYYY"),
                 "created_at": moment().format('D MMM YYYY, h:mm:ss a')
             })
 
-            this.setState( { list: this.state.list } );
+            this.setState( { list: newList } );
         }
     }
 
     markTaskHandler(e) {
-        let id = this.state.list.findIndex((item) => { return item.id.toString() === e.target.id });
+        // avoid mutating the state itself
+        const newList = [...this.state.list];
+        const id = newList.findIndex((item) => { return item.id.toString() === e.target.id });
 
-        if (this.state.list[id].done === false) {
-            this.state.list[id].done = true;
+        if (newList[id].done === false) {
+            newList[id].done = true;
         } else {
-            this.state.list[id].done = false;
+            newList[id].done = false;
         }
 
-        this.setState( { list: this.state.list } );
+        this.setState({ list: newList })
+    }
+
+    updateTaskHandler(e) {
+        const newList = [...this.state.list];
+        const id = newList.findIndex((item) => { return item.id.toString() === e.target.id });
+
+        newList[id].task = e.target.value;
+
+        this.setState({ list: newList });
     }
 
     render() {
         return (
             <div>
-                <Form submitHandler = { (e) => { this.submitHandler(e) } }/>
+                <Form submitHandler={ (e) => { this.submitHandler(e) } }/>
                 <br/>
-                <ItemList markTaskHandler = { (e) => { this.markTaskHandler(e) } }
-                    list = { this.state.list }
+                <ItemList
+                    markTaskHandler={ (e) => { this.markTaskHandler(e) } }
+                    updateTaskHandler={ (e) => { this.updateTaskHandler(e) } }
+                    list={ this.state.list }
                 />
             </div>
         );
